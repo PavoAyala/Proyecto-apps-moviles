@@ -1,0 +1,88 @@
+.task-dashboard {
+    min-height: 100vh;
+    background-color: #f8fafc;
+    padding: 1.5rem;
+    max-width: 600px;
+    /* Mobile focused but nice on desktop */
+    margin: 0 auto;
+}
+
+.dashboard-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+}
+
+.dashboard-header h2 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #0f172a;
+    margin: 0;
+}
+
+.dashboard-header p {
+    color: #64748b;
+    margin: 0;
+}
+
+.logout-button {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: white;
+    color: #ef4444;
+    border: 1px solid #fee2e2;
+    padding: 0;
+}
+
+.add-task-container {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.task-input {
+    flex: 1;
+    padding: 1rem;
+    border-radius: 1rem;
+    border: 1px solid #e2e8f0;
+    font-size: 1rem;
+    outline: none;
+    box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+}
+
+.task-input:focus {
+    border-color: #16a34a;
+}
+
+.add-button {
+    width: 56px;
+    height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #16a34a;
+    color: white;
+    border-radius: 1rem;
+    border: none;
+    box-shadow: 0 4px 6px -1px rgba(22, 163, 74, 0.4);
+}
+
+.add-button:active {
+    transform: scale(0.95);
+}
+
+.tasks-list {
+    display: flex;
+    flex-direction: column;
+}
+
+.empty-state {
+    text-align: center;
+    color: #94a3b8;
+    margin-top: 2rem;
+}

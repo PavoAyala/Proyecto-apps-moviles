@@ -1,0 +1,76 @@
+.task-item-wrapper {
+    position: relative;
+    margin-bottom: 1rem;
+    touch-action: pan-y;
+    /* Important for scroll vs drag */
+    background: white;
+    border-radius: 1rem;
+}
+
+.task-card {
+    display: flex;
+    align-items: center;
+    padding: 1.25rem;
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 1rem;
+    box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.05);
+    transition: all 0.2s;
+    position: relative;
+    z-index: 10;
+    /* Above indicators */
+}
+
+.task-card.completed {
+    background-color: #f0fdf4;
+    border-color: #bbf7d0;
+}
+
+.checkbox {
+    width: 24px;
+    height: 24px;
+    border: 2px solid #cbd5e1;
+    border-radius: 6px;
+    margin-right: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: white;
+}
+
+.checkbox.checked {
+    background-color: #16a34a;
+    border-color: #16a34a;
+}
+
+.task-title {
+    flex: 1;
+    font-size: 1rem;
+    font-weight: 500;
+    color: #1e293b;
+}
+
+.completed .task-title {
+    text-decoration: line-through;
+    color: #94a3b8;
+}
+
+.status-badge {
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
+    margin-left: 0.5rem;
+}
+
+.status-badge.progress {
+    background-color: #e0f2fe;
+    color: #0284c7;
+}
+
+.status-badge.finish {
+    background-color: #dcfce7;
+    color: #16a34a;
+}

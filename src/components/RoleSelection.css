@@ -1,0 +1,94 @@
+.role-selection-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    background-color: #f8fafc;
+    padding: 1rem;
+    font-family: 'Inter', system-ui, sans-serif;
+}
+
+.role-header {
+    text-align: center;
+    margin-bottom: 3rem;
+}
+
+.role-header h1 {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #0f172a;
+    margin-bottom: 0.5rem;
+}
+
+.role-header p {
+    color: #64748b;
+}
+
+.role-grid {
+    display: grid;
+    gap: 1.5rem;
+    width: 100%;
+    max-width: 24rem;
+}
+
+.role-card {
+    display: flex;
+    align-items: center;
+    padding: 1.5rem;
+    background: white;
+    border-radius: 1rem;
+    border: 1px solid #e2e8f0;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    width: 100%;
+    text-align: left;
+}
+
+.role-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+}
+
+.role-card.client:hover {
+    border-color: #fed7aa;
+}
+
+.role-card.admin:hover {
+    border-color: #c7d2fe;
+}
+
+.icon-box {
+    padding: 1rem;
+    border-radius: 0.75rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.client .icon-box {
+    background-color: #fff7ed;
+    color: #ea580c;
+}
+
+.admin .icon-box {
+    background-color: #eef2ff;
+    color: #4f46e5;
+}
+
+.role-info {
+    margin-left: 1.5rem;
+}
+
+.role-info h3 {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: #0f172a;
+    margin: 0;
+}
+
+.role-info p {
+    font-size: 0.875rem;
+    color: #64748b;
+    margin: 0.25rem 0 0 0;
+}
