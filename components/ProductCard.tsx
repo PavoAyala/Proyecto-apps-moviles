@@ -1,5 +1,6 @@
+import { useCart } from '@/context/CartContext';
 import { useRouter } from 'expo-router';
-import { Dimensions, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Dimensions, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 interface Product {
     id: number;
@@ -17,34 +18,45 @@ const { width } = Dimensions.get('window');
 
 export const ProductCard = ({ product }: ProductCardProps) => {
     const router = useRouter();
+    const { addItem } = useCart();
+
+    const handleAddToCart = () => {
+        addItem(product);
+        Alert.alert('Agregado', `${product.name} se agregó al carrito.`);
+    };
 
     return (
-        <TouchableOpacity
-            style={styles.card}
-            onPress={() => router.push(`/product/${product.id}`)}
-            activeOpacity={0.9}
-        >
-            <Image
-                source={{ uri: product.image_url || 'https://via.placeholder.com/300x200?text=No+Image' }}
-                style={styles.image}
-            />
-            <View style={styles.content}>
-                <View style={styles.header}>
-                    <Text style={styles.name}>{product.name}</Text>
-                    <Text style={styles.price}>${product.price.toFixed(2)}</Text>
+        <View style={styles.cardContainer}>
+            <TouchableOpacity
+                style={styles.card}
+                onPress={() => router.push(`/product/${product.id}`)}
+                activeOpacity={0.9}
+            >
+                <Image
+                    source={{ uri: product.image_url || 'https://via.placeholder.com/300x200?text=No+Image' }}
+                    style={styles.image}
+                />
+                <View style={styles.content}>
+                    <View style={styles.header}>
+                        <Text style={styles.name}>{product.name}</Text>
+                        <Text style={styles.price}>${product.price.toFixed(2)}</Text>
+                    </View>
+                    {product.description && (
+                        <Text style={styles.description} numberOfLines={2}>
+                            {product.description}
+                        </Text>
+                    )}
                 </View>
-                {product.description && (
-                    <Text style={styles.description} numberOfLines={2}>
-                        {product.description}
-                    </Text>
-                )}
-            </View>
-        </TouchableOpacity>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.addButton} onPress={handleAddToCart}>
+                <Text style={styles.addButtonText}>Agregar</Text>
+            </TouchableOpacity>
+        </View>
     );
 };
 
 const styles = StyleSheet.create({
-    card: {
+    cardContainer: {
         backgroundColor: 'white',
         borderRadius: 12,
         marginBottom: 20,
@@ -55,6 +67,9 @@ const styles = StyleSheet.create({
         elevation: 3,
         overflow: 'hidden',
     },
+    card: {
+
+    },
     image: {
         width: '100%',
         height: 180,
@@ -62,6 +77,7 @@ const styles = StyleSheet.create({
     },
     content: {
         padding: 15,
+        paddingBottom: 5,
     },
     header: {
         flexDirection: 'row',
@@ -85,5 +101,18 @@ const styles = StyleSheet.create({
         fontSize: 14,
         color: '#666',
         lineHeight: 20,
+    },
+    addButton: {
+        backgroundColor: '#D92323',
+        padding: 10,
+        margin: 15,
+        marginTop: 5,
+        borderRadius: 8,
+        alignItems: 'center',
+    },
+    addButtonText: {
+        color: 'white',
+        fontWeight: 'bold',
+        fontSize: 16,
     },
 });

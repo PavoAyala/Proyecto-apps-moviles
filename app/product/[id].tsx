@@ -1,4 +1,5 @@
 
+import { useCart } from '@/context/CartContext';
 import { Ionicons } from '@expo/vector-icons';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -20,6 +21,7 @@ const { width } = Dimensions.get('window');
 export default function ProductDetails() {
     const { id } = useLocalSearchParams();
     const router = useRouter();
+    const { addItem } = useCart();
     const [product, setProduct] = useState<Product | null>(null);
     const [loading, setLoading] = useState(true);
     const [quantity, setQuantity] = useState(1);
@@ -49,7 +51,8 @@ export default function ProductDetails() {
     }
 
     const addToOrder = () => {
-        Alert.alert('Orden', `Agregaste ${quantity} ${product?.name} a tu orden.`);
+        addItem(product, quantity);
+        Alert.alert('Orden', `Agregaste ${quantity} ${product?.name} a tu carrito.`);
         router.back();
     };
 
