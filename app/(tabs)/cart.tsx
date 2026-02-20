@@ -1,6 +1,8 @@
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Colors } from '@/constants/theme';
 import { useCart } from '@/context/CartContext';
+import { useOrderType } from '@/context/OrderTypeContext';
+import { createOrder } from '@/lib/orders';
 import React from 'react';
 import { Alert, FlatList, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -8,17 +10,42 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 export default function CartScreen() {
     const { items, removeItem, updateQuantity, totalAmount, clearCart } = useCart();
 
-    const handleCheckout = () => {
-        Alert.alert('Checkout', `Total a pagar: $${totalAmount.toFixed(2)}`, [
+    const { orderType, setOrderType } = useOrderType();
+    const [isProcessing, setIsProcessing] = React.useState(false);
+
+    const handleCheckout = async () => {
+        if (!orderType) {
+            Alert.alert('Atención', 'Por favor selecciona si es para comer aquí o para llevar.', [
+                { text: 'Seleccionar', onPress: () => setOrderType(null) } // This null might re-trigger the modal if logic is correct, but modal logic checks for null. Actually setOrderType(null) is what we want to TRIGGER the modal? Wait, the modal shows if orderType IS null.
+                // If it is null, the modal SHOULD be showing. 
+                // However, if the user somehow closed it or it didn't show, we can force it?
+                // The modal logic is: const visible = orderType === null;
+                // So if it's null, it shows. 
+                // If we are here, and orderType is null, the modal should be on screen ideally.
+                // But let's just alert them.
+            ]);
+            return;
+        }
+
+        Alert.alert('Checkout', `Total a pagar: $${totalAmount.toFixed(2)}\nOrden: ${orderType === 'dine-in' ? 'Comer aquí' : 'Para llevar'}`, [
             {
                 text: 'Cancelar',
                 style: 'cancel',
             },
             {
                 text: 'Pagar',
-                onPress: () => {
-                    clearCart();
-                    Alert.alert('Éxito', '¡Tu orden ha sido realizada!');
+                onPress: async () => {
+                    setIsProcessing(true);
+                    try {
+                        await createOrder(items, totalAmount, orderType);
+                        clearCart();
+                        Alert.alert('Éxito', '¡Tu orden ha sido realizada correctamente!');
+                    } catch (error) {
+                        console.error(error);
+                        Alert.alert('Error', 'Hubo un problema al crear tu orden. Por favor intenta de nuevo.');
+                    } finally {
+                        setIsProcessing(false);
+                    }
                 },
             },
         ]);
@@ -77,8 +104,14 @@ export default function CartScreen() {
                     <Text style={styles.totalLabel}>Total:</Text>
                     <Text style={styles.totalAmount}>${totalAmount.toFixed(2)}</Text>
                 </View>
-                <TouchableOpacity style={styles.checkoutButton} onPress={handleCheckout}>
-                    <Text style={styles.checkoutButtonText}>Pagar</Text>
+                <TouchableOpacity
+                    style={[styles.checkoutButton, isProcessing && styles.checkoutButtonDisabled]}
+                    onPress={handleCheckout}
+                    disabled={isProcessing}
+                >
+                    <Text style={styles.checkoutButtonText}>
+                        {isProcessing ? 'Procesando...' : 'Pagar'}
+                    </Text>
                 </TouchableOpacity>
             </View>
         </SafeAreaView>
@@ -197,5 +230,9 @@ const styles = StyleSheet.create({
         color: 'white',
         fontSize: 18,
         fontWeight: 'bold',
+    },
+    checkoutButtonDisabled: {
+        backgroundColor: '#ffaaaa',
+        opacity: 0.7,
     },
 });
