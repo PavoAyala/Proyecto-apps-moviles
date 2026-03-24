@@ -3,55 +3,57 @@ import { Colors } from '@/constants/theme';
 import { useCart } from '@/context/CartContext';
 import { useOrderType } from '@/context/OrderTypeContext';
 import { createOrder } from '@/lib/orders';
-import React from 'react';
-import { Alert, FlatList, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { MaterialIcons } from '@expo/vector-icons';
+import React, { useState } from 'react';
+import { FlatList, Image, Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function CartScreen() {
     const { items, removeItem, updateQuantity, totalAmount, clearCart } = useCart();
-
     const { orderType, setOrderType } = useOrderType();
-    const [isProcessing, setIsProcessing] = React.useState(false);
 
-    const handleCheckout = async () => {
+    const [isProcessing, setIsProcessing] = useState(false);
+    const [showConfirmModal, setShowConfirmModal] = useState(false);
+    const [statusModal, setStatusModal] = useState<{ visible: boolean; type: 'success' | 'error'; message: string }>({
+        visible: false,
+        type: 'success',
+        message: ''
+    });
+
+    const handleCheckout = () => {
         if (!orderType) {
-            Alert.alert('Atención', 'Por favor selecciona si es para comer aquí o para llevar.', [
-                { text: 'Seleccionar', onPress: () => setOrderType(null) } // This null might re-trigger the modal if logic is correct, but modal logic checks for null. Actually setOrderType(null) is what we want to TRIGGER the modal? Wait, the modal shows if orderType IS null.
-                // If it is null, the modal SHOULD be showing. 
-                // However, if the user somehow closed it or it didn't show, we can force it?
-                // The modal logic is: const visible = orderType === null;
-                // So if it's null, it shows. 
-                // If we are here, and orderType is null, the modal should be on screen ideally.
-                // But let's just alert them.
-            ]);
+            // Trigger the OrderTypeModal to show up
+            setOrderType(null);
             return;
         }
-
-        Alert.alert('Checkout', `Total a pagar: $${totalAmount.toFixed(2)}\nOrden: ${orderType === 'dine-in' ? 'Comer aquí' : 'Para llevar'}`, [
-            {
-                text: 'Cancelar',
-                style: 'cancel',
-            },
-            {
-                text: 'Pagar',
-                onPress: async () => {
-                    setIsProcessing(true);
-                    try {
-                        await createOrder(items, totalAmount, orderType);
-                        clearCart();
-                        Alert.alert('Éxito', '¡Tu orden ha sido realizada correctamente!');
-                    } catch (error) {
-                        console.error(error);
-                        Alert.alert('Error', 'Hubo un problema al crear tu orden. Por favor intenta de nuevo.');
-                    } finally {
-                        setIsProcessing(false);
-                    }
-                },
-            },
-        ]);
+        setShowConfirmModal(true);
     };
 
-    if (items.length === 0) {
+    const processPayment = async () => {
+        setIsProcessing(true);
+        try {
+            await createOrder(items, totalAmount, orderType as 'dine-in' | 'takeout');
+            clearCart();
+            setShowConfirmModal(false);
+            setStatusModal({
+                visible: true,
+                type: 'success',
+                message: '¡Tu orden ha sido realizada correctamente!'
+            });
+        } catch (error) {
+            console.error(error);
+            setShowConfirmModal(false);
+            setStatusModal({
+                visible: true,
+                type: 'error',
+                message: 'Hubo un problema al crear tu orden. Por favor intenta de nuevo.'
+            });
+        } finally {
+            setIsProcessing(false);
+        }
+    };
+
+    if (items.length === 0 && !statusModal.visible) {
         return (
             <View style={styles.emptyContainer}>
                 <IconSymbol name="cart" size={64} color="#ccc" />
@@ -105,15 +107,75 @@ export default function CartScreen() {
                     <Text style={styles.totalAmount}>${totalAmount.toFixed(2)}</Text>
                 </View>
                 <TouchableOpacity
-                    style={[styles.checkoutButton, isProcessing && styles.checkoutButtonDisabled]}
+                    style={[styles.checkoutButton, (isProcessing || items.length === 0) && styles.checkoutButtonDisabled]}
                     onPress={handleCheckout}
-                    disabled={isProcessing}
+                    disabled={isProcessing || items.length === 0}
                 >
                     <Text style={styles.checkoutButtonText}>
                         {isProcessing ? 'Procesando...' : 'Pagar'}
                     </Text>
                 </TouchableOpacity>
             </View>
+
+            {/* Custom Confirm Modal */}
+            <Modal
+                animationType="fade"
+                transparent={true}
+                visible={showConfirmModal}
+                onRequestClose={() => !isProcessing && setShowConfirmModal(false)}
+            >
+                <View style={styles.modalOverlay}>
+                    <View style={styles.modalView}>
+                        <Text style={styles.modalTitle}>Confirmar Pago</Text>
+                        <Text style={styles.modalText}>Total a pagar: <Text style={styles.boldText}>${totalAmount.toFixed(2)}</Text></Text>
+                        <Text style={styles.modalText}>Orden: <Text style={styles.boldText}>{orderType === 'dine-in' ? 'Comer aquí' : 'Para llevar'}</Text></Text>
+
+                        <View style={styles.modalButtons}>
+                            <TouchableOpacity
+                                style={[styles.modalButton, styles.buttonCancel]}
+                                onPress={() => setShowConfirmModal(false)}
+                                disabled={isProcessing}
+                            >
+                                <Text style={styles.buttonCancelText}>Cancelar</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={[styles.modalButton, styles.buttonConfirm, isProcessing && styles.checkoutButtonDisabled]}
+                                onPress={processPayment}
+                                disabled={isProcessing}
+                            >
+                                <Text style={styles.buttonConfirmText}>{isProcessing ? 'Procesando...' : 'Pagar'}</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </View>
+            </Modal>
+
+            {/* Success / Error Modal */}
+            <Modal
+                animationType="fade"
+                transparent={true}
+                visible={statusModal.visible}
+                onRequestClose={() => setStatusModal({ ...statusModal, visible: false })}
+            >
+                <View style={styles.modalOverlay}>
+                    <View style={styles.modalView}>
+                        <MaterialIcons
+                            name={statusModal.type === 'success' ? 'check-circle' : 'error'}
+                            size={60}
+                            color={statusModal.type === 'success' ? '#4CAF50' : '#F44336'}
+                            style={{ marginBottom: 15 }}
+                        />
+                        <Text style={styles.modalTitle}>{statusModal.type === 'success' ? 'Éxito' : 'Error'}</Text>
+                        <Text style={styles.modalMessage}>{statusModal.message}</Text>
+                        <TouchableOpacity
+                            style={[styles.modalButton, styles.buttonConfirm, { width: '100%', marginTop: 20 }]}
+                            onPress={() => setStatusModal({ ...statusModal, visible: false })}
+                        >
+                            <Text style={styles.buttonConfirmText}>Aceptar</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </Modal>
         </SafeAreaView>
     );
 }
@@ -234,5 +296,77 @@ const styles = StyleSheet.create({
     checkoutButtonDisabled: {
         backgroundColor: '#ffaaaa',
         opacity: 0.7,
+    },
+    modalOverlay: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    },
+    modalView: {
+        width: '85%',
+        maxWidth: 400,
+        backgroundColor: 'white',
+        borderRadius: 20,
+        padding: 25,
+        alignItems: 'center',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.25,
+        shadowRadius: 4,
+        elevation: 5,
+    },
+    modalTitle: {
+        fontSize: 22,
+        fontWeight: 'bold',
+        marginBottom: 15,
+        color: '#333',
+    },
+    modalText: {
+        fontSize: 16,
+        marginBottom: 10,
+        color: '#555',
+        width: '100%',
+    },
+    boldText: {
+        fontWeight: 'bold',
+        color: '#000',
+    },
+    modalMessage: {
+        fontSize: 16,
+        textAlign: 'center',
+        color: '#555',
+        marginBottom: 10,
+    },
+    modalButtons: {
+        flexDirection: 'row',
+        marginTop: 20,
+        justifyContent: 'space-between',
+        width: '100%',
+        gap: 15,
+    },
+    modalButton: {
+        flex: 1,
+        padding: 12,
+        borderRadius: 10,
+        alignItems: 'center',
+    },
+    buttonCancel: {
+        backgroundColor: '#f5f5f5',
+        borderWidth: 1,
+        borderColor: '#ddd',
+    },
+    buttonConfirm: {
+        backgroundColor: '#D92323',
+    },
+    buttonCancelText: {
+        color: '#555',
+        fontWeight: '600',
+        fontSize: 16,
+    },
+    buttonConfirmText: {
+        color: 'white',
+        fontWeight: 'bold',
+        fontSize: 16,
     },
 });

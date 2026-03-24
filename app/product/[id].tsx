@@ -1,10 +1,9 @@
-
 import { useCart } from '@/context/CartContext';
 import { Ionicons } from '@expo/vector-icons';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, Dimensions, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Dimensions, Image, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Button } from '../../components/Button';
 import { supabase } from '../../lib/supabase';
 
@@ -25,6 +24,8 @@ export default function ProductDetails() {
     const [product, setProduct] = useState<Product | null>(null);
     const [loading, setLoading] = useState(true);
     const [quantity, setQuantity] = useState(1);
+    const [showSuccessModal, setShowSuccessModal] = useState(false);
+    const [showErrorModal, setShowErrorModal] = useState({ visible: false, message: '' });
 
     useEffect(() => {
         if (id) fetchProduct();
@@ -43,7 +44,7 @@ export default function ProductDetails() {
             setProduct(data);
         } catch (error) {
             if (error instanceof Error) {
-                Alert.alert('Error', error.message);
+                setShowErrorModal({ visible: true, message: error.message });
             }
         } finally {
             setLoading(false);
@@ -51,8 +52,13 @@ export default function ProductDetails() {
     }
 
     const addToOrder = () => {
+        if (!product) return;
         addItem(product, quantity);
-        Alert.alert('Orden', `Agregaste ${quantity} ${product?.name} a tu carrito.`);
+        setShowSuccessModal(true);
+    };
+
+    const handleSuccessClose = () => {
+        setShowSuccessModal(false);
         router.back();
     };
 
@@ -126,6 +132,50 @@ export default function ProductDetails() {
                     style={styles.addButton}
                 />
             </View>
+
+            {/* Success Modal */}
+            <Modal
+                animationType="fade"
+                transparent={true}
+                visible={showSuccessModal}
+                onRequestClose={handleSuccessClose}
+            >
+                <View style={styles.modalOverlay}>
+                    <View style={styles.modalView}>
+                        <Ionicons name="checkmark-circle" size={60} color="#4CAF50" style={{ marginBottom: 15 }} />
+                        <Text style={styles.modalTitle}>¡Agregado!</Text>
+                        <Text style={styles.modalMessage}>Agregaste {quantity} {product.name} a tu carrito.</Text>
+                        <TouchableOpacity
+                            style={styles.modalButton}
+                            onPress={handleSuccessClose}
+                        >
+                            <Text style={styles.modalButtonText}>Aceptar</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </Modal>
+
+            {/* Error Modal */}
+            <Modal
+                animationType="fade"
+                transparent={true}
+                visible={showErrorModal.visible}
+                onRequestClose={() => setShowErrorModal({ visible: false, message: '' })}
+            >
+                <View style={styles.modalOverlay}>
+                    <View style={styles.modalView}>
+                        <Ionicons name="close-circle" size={60} color="#F44336" style={{ marginBottom: 15 }} />
+                        <Text style={styles.modalTitle}>Error</Text>
+                        <Text style={styles.modalMessage}>{showErrorModal.message}</Text>
+                        <TouchableOpacity
+                            style={styles.modalButton}
+                            onPress={() => setShowErrorModal({ visible: false, message: '' })}
+                        >
+                            <Text style={styles.modalButtonText}>Cerrar</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </Modal>
         </View>
     );
 }
@@ -167,10 +217,12 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         color: '#333',
         marginBottom: 5,
+        marginTop: 10,
     },
     price: {
         fontSize: 20,
-        color: '#666',
+        color: '#D92323',
+        fontWeight: 'bold',
         marginBottom: 15,
     },
     description: {
@@ -239,5 +291,49 @@ const styles = StyleSheet.create({
     addButton: {
         flex: 1,
         marginVertical: 0,
-    }
+    },
+    modalOverlay: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    },
+    modalView: {
+        width: '80%',
+        maxWidth: 340,
+        backgroundColor: 'white',
+        borderRadius: 20,
+        padding: 25,
+        alignItems: 'center',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.25,
+        shadowRadius: 4,
+        elevation: 5,
+    },
+    modalTitle: {
+        fontSize: 22,
+        fontWeight: 'bold',
+        marginBottom: 10,
+        color: '#333',
+    },
+    modalMessage: {
+        fontSize: 16,
+        textAlign: 'center',
+        color: '#555',
+        marginBottom: 20,
+    },
+    modalButton: {
+        backgroundColor: '#D92323',
+        paddingVertical: 12,
+        paddingHorizontal: 30,
+        borderRadius: 25,
+        width: '100%',
+        alignItems: 'center',
+    },
+    modalButtonText: {
+        color: 'white',
+        fontWeight: 'bold',
+        fontSize: 16,
+    },
 });
