@@ -1,7 +1,8 @@
 import React, { createContext, ReactNode, useContext, useState, useMemo } from 'react';
 
 export interface CartItem {
-    id: number;
+    cartItemId: string; // Unique ID for this entry (product_id + normalized_note)
+    id: number; // Product ID
     name: string;
     price: number;
     image_url: string | null;
@@ -12,8 +13,8 @@ export interface CartItem {
 interface CartContextType {
     items: CartItem[];
     addItem: (product: any, quantity?: number, note?: string) => void;
-    removeItem: (id: number) => void;
-    updateQuantity: (id: number, quantity: number) => void;
+    removeItem: (cartItemId: string) => void;
+    updateQuantity: (cartItemId: string, quantity: number) => void;
     clearCart: () => void;
     totalAmount: number;
     totalItems: number;
@@ -26,38 +27,45 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
 
     const addItem = (product: any, quantity: number = 1, note?: string) => {
         setItems((currentItems) => {
-            // Find item by ID AND note to allow different preferences for the same product
-            const existingItem = currentItems.find((item) => item.id === product.id && item.note === note);
+            // Normalize note: treat empty or whitespace-only as undefined
+            const normalizedNote = note?.trim() || undefined;
+            const cartItemId = `${product.id}-${normalizedNote || ''}`;
+
+            // Find item by cartItemId to avoid duplicates with same preferences
+            const existingItem = currentItems.find((item) => item.cartItemId === cartItemId);
+            
             if (existingItem) {
                 return currentItems.map((item) =>
-                    (item.id === product.id && item.note === note)
+                    (item.cartItemId === cartItemId)
                         ? { ...item, quantity: item.quantity + quantity }
                         : item
                 );
             }
+            
             return [...currentItems, {
+                cartItemId,
                 id: product.id,
                 name: product.name,
                 price: product.price,
                 image_url: product.image_url,
                 quantity: quantity,
-                note: note
+                note: normalizedNote
             }];
         });
     };
 
-    const removeItem = (id: number) => {
-        setItems((currentItems) => currentItems.filter((item) => item.id !== id));
+    const removeItem = (cartItemId: string) => {
+        setItems((currentItems) => currentItems.filter((item) => item.cartItemId !== cartItemId));
     };
 
-    const updateQuantity = (id: number, quantity: number) => {
+    const updateQuantity = (cartItemId: string, quantity: number) => {
         if (quantity < 1) {
-            removeItem(id);
+            removeItem(cartItemId);
             return;
         }
         setItems((currentItems) =>
             currentItems.map((item) =>
-                item.id === id ? { ...item, quantity } : item
+                item.cartItemId === cartItemId ? { ...item, quantity } : item
             )
         );
     };

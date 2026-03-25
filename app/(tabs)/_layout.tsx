@@ -6,9 +6,11 @@ import { OrderTypeModal } from '@/components/OrderTypeModal';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useCart } from '@/context/CartContext';
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
+  const { totalItems } = useCart();
 
   return (
     <>
@@ -37,6 +39,11 @@ export default function TabLayout() {
           options={{
             title: 'Carrito',
             tabBarIcon: ({ color }) => <IconSymbol size={28} name="cart.fill" color={color} />,
+            tabBarBadge: totalItems > 0 ? totalItems : undefined,
+            tabBarBadgeStyle: {
+              backgroundColor: '#D92323',
+              color: 'white',
+            },
           }}
         />
       </Tabs>

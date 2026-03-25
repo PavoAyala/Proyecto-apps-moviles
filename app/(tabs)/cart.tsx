@@ -14,7 +14,7 @@ export default function CartScreen() {
     const theme = colorScheme ?? 'light';
     const themeColors = Colors[theme];
 
-    const { items, removeItem, updateQuantity, totalAmount, clearCart } = useCart();
+    const { items, removeItem, updateQuantity, totalAmount, clearCart, totalItems } = useCart();
     const { orderType, setOrderType } = useOrderType();
 
     // Derived UI values for the interactive order type selector
@@ -77,9 +77,15 @@ export default function CartScreen() {
 
     return (
         <SafeAreaView style={[styles.container, { backgroundColor: themeColors.background }]}>
+            <View style={[styles.header, { borderBottomColor: themeColors.border }]}>
+                <Text style={[styles.headerTitle, { color: themeColors.text }]}>Mi Carrito</Text>
+                <View style={[styles.badgeContainer, { backgroundColor: themeColors.tint }]}>
+                    <Text style={styles.badgeText}>{totalItems}</Text>
+                </View>
+            </View>
             <FlatList
                 data={items}
-                keyExtractor={(item) => item.id.toString()}
+                keyExtractor={(item) => item.cartItemId}
                 contentContainerStyle={styles.listContent}
                 renderItem={({ item }) => (
                     <View style={[styles.itemContainer, { backgroundColor: themeColors.card }]}>
@@ -98,21 +104,21 @@ export default function CartScreen() {
 
                             <View style={styles.quantityContainer}>
                                 <TouchableOpacity
-                                    onPress={() => updateQuantity(item.id, item.quantity - 1)}
+                                    onPress={() => updateQuantity(item.cartItemId, item.quantity - 1)}
                                     style={styles.quantityButton}
                                 >
                                     <IconSymbol name="minus.circle.fill" size={24} color={themeColors.tint} />
                                 </TouchableOpacity>
                                 <Text style={[styles.quantityText, { color: themeColors.text }]}>{item.quantity}</Text>
                                 <TouchableOpacity
-                                    onPress={() => updateQuantity(item.id, item.quantity + 1)}
+                                    onPress={() => updateQuantity(item.cartItemId, item.quantity + 1)}
                                     style={styles.quantityButton}
                                 >
                                     <IconSymbol name="plus.circle.fill" size={24} color={themeColors.tint} />
                                 </TouchableOpacity>
                             </View>
                         </View>
-                        <TouchableOpacity onPress={() => removeItem(item.id)} style={styles.removeButton}>
+                        <TouchableOpacity onPress={() => removeItem(item.cartItemId)} style={styles.removeButton}>
                             <IconSymbol name="trash.fill" size={20} color="#ff4444" />
                         </TouchableOpacity>
                     </View>
@@ -297,6 +303,31 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: '#f5f5f5',
+    },
+    header: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 20,
+        paddingVertical: 15,
+        borderBottomWidth: 1,
+    },
+    headerTitle: {
+        fontSize: 24,
+        fontWeight: 'bold',
+    },
+    badgeContainer: {
+        marginLeft: 10,
+        paddingHorizontal: 8,
+        paddingVertical: 2,
+        borderRadius: 12,
+        minWidth: 24,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    badgeText: {
+        color: 'white',
+        fontSize: 14,
+        fontWeight: 'bold',
     },
     emptyContainer: {
         flex: 1,
