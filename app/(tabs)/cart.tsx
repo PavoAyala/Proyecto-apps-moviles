@@ -5,6 +5,7 @@ import { useOrderType } from '@/context/OrderTypeContext';
 import { createOrder } from '@/lib/orders';
 import { MaterialIcons } from '@expo/vector-icons';
 import React, { useState } from 'react';
+import { CardPaymentModal } from '@/components/CardPaymentModal';
 import { FlatList, Image, Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useColorScheme } from '@/hooks/use-color-scheme';
@@ -26,6 +27,7 @@ export default function CartScreen() {
 
     const [isProcessing, setIsProcessing] = useState(false);
     const [showConfirmModal, setShowConfirmModal] = useState(false);
+    const [showCardModal, setShowCardModal] = useState(false);
     const [paymentMethod, setPaymentMethod] = useState<'efectivo' | 'tarjeta'>('efectivo');
     const [statusModal, setStatusModal] = useState<{ visible: boolean; type: 'success' | 'error'; message: string }>({
         visible: false,
@@ -48,6 +50,7 @@ export default function CartScreen() {
             await createOrder(items, totalAmount, orderType as 'dine-in' | 'takeout', paymentMethod);
             clearCart();
             setShowConfirmModal(false);
+            setShowCardModal(false);
             setStatusModal({
                 visible: true,
                 type: 'success',
@@ -259,7 +262,14 @@ export default function CartScreen() {
                             </TouchableOpacity>
                             <TouchableOpacity
                                 style={[styles.modalButton, styles.buttonConfirm, isProcessing && styles.checkoutButtonDisabled]}
-                                onPress={processPayment}
+                                onPress={() => {
+                                    if (paymentMethod === 'tarjeta') {
+                                        setShowConfirmModal(false);
+                                        setShowCardModal(true);
+                                    } else {
+                                        processPayment();
+                                    }
+                                }}
                                 disabled={isProcessing}
                             >
                                 <Text style={styles.buttonConfirmText}>{isProcessing ? 'Procesando...' : 'Pagar'}</Text>
@@ -268,6 +278,14 @@ export default function CartScreen() {
                     </View>
                 </View>
             </Modal>
+
+            {/* Card Payment Modal */}
+            <CardPaymentModal
+                visible={showCardModal}
+                onClose={() => setShowCardModal(false)}
+                onConfirm={processPayment}
+                amount={totalAmount}
+            />
 
             {/* Success / Error Modal */}
             <Modal
