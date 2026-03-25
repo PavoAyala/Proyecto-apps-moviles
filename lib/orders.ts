@@ -1,7 +1,12 @@
 import { CartItem } from '../context/CartContext';
 import { supabase } from './supabase';
 
-export async function createOrder(items: CartItem[], totalAmount: number, orderType: 'dine-in' | 'takeout') {
+export async function createOrder(
+    items: CartItem[], 
+    totalAmount: number, 
+    orderType: 'dine-in' | 'takeout',
+    paymentMethod: 'efectivo' | 'tarjeta' = 'efectivo'
+) {
     try {
         const { data: { user } } = await supabase.auth.getUser();
 
@@ -45,8 +50,21 @@ export async function createOrder(items: CartItem[], totalAmount: number, orderT
 
         if (itemsError) {
             console.error('Error creating order items:', itemsError);
-            // In a real app, we might want to delete the order here or use a stored procedure for atomicity
             throw new Error('Failed to create order items');
+        }
+
+        // 3. Create Payment Record
+        const { error: paymentError } = await supabase
+            .from('payments')
+            .insert({
+                order_id: order.id,
+                amount: totalAmount,
+                payment_method: paymentMethod,
+                status: 'pending' // Default status for cash/card payments until confirmed by staff
+            });
+
+        if (paymentError) {
+            console.error('Error creating payment record:', paymentError);
         }
 
         return order;
@@ -86,6 +104,46 @@ export async function getUserOrders(limit: number = 10) {
         return data;
     } catch (error) {
         console.error('getUserOrders logic failed:', error);
+        throw error;
+    }
+}
+
+export async function getUserStats() {
+    try {
+        const { data: { user } } = await supabase.auth.getUser();
+
+        if (!user) {
+            throw new Error('User not authenticated');
+        }
+
+        const { count, error: countError } = await supabase
+            .from('orders')
+            .select('*', { count: 'exact', head: true })
+            .eq('user_id', user.id);
+
+        if (countError) {
+            console.error('Error fetching user order count:', countError);
+            throw countError;
+        }
+
+        const { data: profile, error: profileError } = await supabase
+            .from('profiles')
+            .select('name, role, created_at')
+            .eq('id', user.id)
+            .single();
+
+        if (profileError && profileError.code !== 'PGRST116') {
+            console.error('Error fetching user profile:', profileError);
+        }
+
+        return {
+            email: user.email,
+            name: profile?.name || user?.user_metadata?.full_name || 'Usuario',
+            createdAt: profile?.created_at || user.created_at,
+            orderCount: count || 0,
+        };
+    } catch (error) {
+        console.error('getUserStats logic failed:', error);
         throw error;
     }
 }

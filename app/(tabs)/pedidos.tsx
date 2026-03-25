@@ -2,12 +2,17 @@ import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Colors } from '@/constants/theme';
 import { getUserOrders } from '@/lib/orders';
 import { MaterialIcons } from '@expo/vector-icons';
-import React, { useEffect, useState, useCallback } from 'react';
-import { FlatList, RefreshControl, StyleSheet, Text, View, Image } from 'react-native';
+import React, { useState, useCallback } from 'react';
+import { FlatList, RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from 'expo-router';
+import { useColorScheme } from '@/hooks/use-color-scheme';
 
 export default function PedidosScreen() {
+    const colorScheme = useColorScheme();
+    const theme = colorScheme ?? 'light';
+    const themeColors = Colors[theme];
+
     const [orders, setOrders] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
@@ -16,7 +21,21 @@ export default function PedidosScreen() {
     const loadOrders = async () => {
         try {
             const data = await getUserOrders();
-            setOrders(data || []);
+            
+            // Sort: pending first, then by date descending (newest first)
+            const sortedData = (data || []).sort((a, b) => {
+                const statusOrder = { 'pending': 0, 'completed': 1 };
+                const aStatus = (a.status as 'pending' | 'completed') || 'completed';
+                const bStatus = (b.status as 'pending' | 'completed') || 'completed';
+                
+                if (statusOrder[aStatus] !== statusOrder[bStatus]) {
+                    return statusOrder[aStatus] - statusOrder[bStatus];
+                }
+                
+                return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+            });
+
+            setOrders(sortedData);
             setError(null);
         } catch (err: any) {
             setError(err.message || 'Error al cargar pedidos');
@@ -39,9 +58,9 @@ export default function PedidosScreen() {
 
     const renderOrderItem = ({ item }: { item: any }) => {
         return (
-            <View style={styles.orderCard}>
+            <View style={[styles.orderCard, { backgroundColor: themeColors.card }]}>
                 <View style={styles.orderHeader}>
-                    <Text style={styles.orderDate}>
+                    <Text style={[styles.orderDate, { color: themeColors.text, opacity: 0.7 }]}>
                         {new Date(item.created_at).toLocaleDateString()} {new Date(item.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </Text>
                     <View style={[styles.statusBadge, item.status === 'pending' ? styles.statusPending : styles.statusCompleted]}>
@@ -51,25 +70,25 @@ export default function PedidosScreen() {
                     </View>
                 </View>
 
-                <View style={styles.orderTypeContainer}>
-                    <IconSymbol name={item.order_type === 'dine-in' ? 'fork.knife' : 'takeoutbag.and.cup.and.straw'} size={18} color="#666" />
-                    <Text style={styles.orderTypeText}>
+                <View style={[styles.orderTypeContainer, { borderBottomColor: themeColors.border }]}>
+                    <IconSymbol name={item.order_type === 'dine-in' ? 'fork.knife' : 'takeoutbag.and.cup.and.straw'} size={18} color={themeColors.icon} />
+                    <Text style={[styles.orderTypeText, { color: themeColors.text, opacity: 0.8 }]}>
                         {item.order_type === 'dine-in' ? 'Comer aquí' : 'Para llevar'}
                     </Text>
                 </View>
 
                 <View style={styles.itemsList}>
                     {item.order_items?.map((orderItem: any, index: number) => (
-                        <View key={index} style={styles.productRow}>
-                            <Text style={styles.productQuantity}>{orderItem.quantity}x</Text>
-                            <Text style={styles.productName}>{orderItem.products?.name || 'Producto'}</Text>
-                            <Text style={styles.productSubtotal}>${(orderItem.subtotal).toFixed(2)}</Text>
+                        <View key={`${item.id}-item-${index}`} style={styles.productRow}>
+                            <Text style={[styles.productQuantity, { color: themeColors.text }]}>{orderItem.quantity}x</Text>
+                            <Text style={[styles.productName, { color: themeColors.text, opacity: 0.9 }]}>{orderItem.products?.name || 'Producto'}</Text>
+                            <Text style={[styles.productSubtotal, { color: themeColors.text }]}>${(orderItem.subtotal).toFixed(2)}</Text>
                         </View>
                     ))}
                 </View>
 
-                <View style={styles.orderFooter}>
-                    <Text style={styles.totalLabel}>Total</Text>
+                <View style={[styles.orderFooter, { borderTopColor: themeColors.border }]}>
+                    <Text style={[styles.totalLabel, { color: themeColors.text }]}>Total</Text>
                     <Text style={styles.totalAmount}>${(item.total_amount).toFixed(2)}</Text>
                 </View>
             </View>
@@ -78,8 +97,8 @@ export default function PedidosScreen() {
 
     if (loading) {
         return (
-            <SafeAreaView style={styles.centerContainer}>
-                <Text>Cargando pedidos...</Text>
+            <SafeAreaView style={[styles.centerContainer, { backgroundColor: themeColors.background }]}>
+                <Text style={{ color: themeColors.text }}>Cargando pedidos...</Text>
             </SafeAreaView>
         );
     }
@@ -94,11 +113,11 @@ export default function PedidosScreen() {
     }
 
     return (
-        <SafeAreaView style={styles.container}>
+        <SafeAreaView style={[styles.container, { backgroundColor: themeColors.background }]}>
             {orders.length === 0 ? (
                 <View style={styles.emptyContainer}>
-                    <IconSymbol name="list.bullet.rectangle.fill" size={64} color="#ccc" />
-                    <Text style={styles.emptyText}>No tienes pedidos recientes</Text>
+                    <IconSymbol name="list.bullet.rectangle.fill" size={64} color={themeColors.icon} />
+                    <Text style={[styles.emptyText, { color: themeColors.text, opacity: 0.6 }]}>No tienes pedidos recientes</Text>
                 </View>
             ) : (
                 <FlatList

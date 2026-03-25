@@ -3,9 +3,11 @@ import { Ionicons } from '@expo/vector-icons';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Dimensions, Image, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Dimensions, Image, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View, TextInput } from 'react-native';
 import { Button } from '../../components/Button';
 import { supabase } from '../../lib/supabase';
+import { useColorScheme } from '../../hooks/use-color-scheme';
+import { Colors } from '../../constants/theme';
 
 interface Product {
     id: number;
@@ -18,12 +20,17 @@ interface Product {
 const { width } = Dimensions.get('window');
 
 export default function ProductDetails() {
+    const colorScheme = useColorScheme();
+    const theme = colorScheme ?? 'light';
+    const themeColors = Colors[theme];
+
     const { id } = useLocalSearchParams();
     const router = useRouter();
     const { addItem } = useCart();
     const [product, setProduct] = useState<Product | null>(null);
     const [loading, setLoading] = useState(true);
     const [quantity, setQuantity] = useState(1);
+    const [note, setNote] = useState('');
     const [showSuccessModal, setShowSuccessModal] = useState(false);
     const [showErrorModal, setShowErrorModal] = useState({ visible: false, message: '' });
 
@@ -53,7 +60,7 @@ export default function ProductDetails() {
 
     const addToOrder = () => {
         if (!product) return;
-        addItem(product, quantity);
+        addItem(product, quantity, note);
         setShowSuccessModal(true);
     };
 
@@ -64,7 +71,7 @@ export default function ProductDetails() {
 
     if (loading) {
         return (
-            <View style={styles.center}>
+            <View style={[styles.center, { backgroundColor: themeColors.background }]}>
                 <ActivityIndicator size="large" color="#D92323" />
             </View>
         );
@@ -72,14 +79,14 @@ export default function ProductDetails() {
 
     if (!product) {
         return (
-            <View style={styles.center}>
-                <Text>Producto no encontrado</Text>
+            <View style={[styles.center, { backgroundColor: themeColors.background }]}>
+                <Text style={{ color: themeColors.text }}>Producto no encontrado</Text>
             </View>
         );
     }
 
     return (
-        <View style={styles.container}>
+        <View style={[styles.container, { backgroundColor: themeColors.background }]}>
             <StatusBar style="light" />
             <Stack.Screen options={{ headerShown: false }} />
 
@@ -95,34 +102,48 @@ export default function ProductDetails() {
                 </View>
 
                 <View style={styles.content}>
-                    <Text style={styles.name}>{product.name}</Text>
+                    <Text style={[styles.name, { color: themeColors.text }]}>{product.name}</Text>
                     <Text style={styles.price}>${product.price.toFixed(2)}</Text>
-                    <Text style={styles.description}>{product.description}</Text>
+                    <Text style={[styles.description, { color: themeColors.text, opacity: 0.8 }]}>{product.description}</Text>
 
-                    <View style={styles.divider} />
+                    <View style={[styles.divider, { backgroundColor: themeColors.border }]} />
 
-                    <Text style={styles.sectionTitle}>Preferencias</Text>
-                    <Text style={styles.note}>Nota para la cocina (opcional)</Text>
-                    <View style={styles.noteInput}>
-                        <Text style={{ color: '#999' }}>Escribe aquí...</Text>
-                    </View>
+                    <Text style={[styles.sectionTitle, { color: themeColors.text }]}>Preferencias</Text>
+                    <Text style={[styles.note, { color: themeColors.text, opacity: 0.6 }]}>Nota para la cocina (opcional)</Text>
+                    <TextInput
+                        style={[
+                            styles.noteInput, 
+                            { 
+                                backgroundColor: theme === 'dark' ? '#1e1e1e' : '#f9f9f9', 
+                                borderColor: themeColors.border,
+                                color: themeColors.text,
+                                textAlignVertical: 'top'
+                            }
+                        ]}
+                        placeholder="Escribe aquí (ej. sin cebolla, muy picante...)"
+                        placeholderTextColor={theme === 'dark' ? '#666' : '#999'}
+                        value={note}
+                        onChangeText={setNote}
+                        multiline
+                        numberOfLines={4}
+                    />
                 </View>
             </ScrollView>
 
-            <View style={styles.footer}>
-                <View style={styles.quantityContainer}>
+            <View style={[styles.footer, { backgroundColor: themeColors.card, borderTopColor: themeColors.border }]}>
+                <View style={[styles.quantityContainer, { backgroundColor: theme === 'dark' ? '#333' : '#f0f0f0' }]}>
                     <TouchableOpacity
                         style={styles.quantityBtn}
                         onPress={() => setQuantity(Math.max(1, quantity - 1))}
                     >
-                        <Ionicons name="remove" size={24} color="#333" />
+                        <Ionicons name="remove" size={24} color={themeColors.text} />
                     </TouchableOpacity>
-                    <Text style={styles.quantityText}>{quantity}</Text>
+                    <Text style={[styles.quantityText, { color: themeColors.text }]}>{quantity}</Text>
                     <TouchableOpacity
                         style={styles.quantityBtn}
                         onPress={() => setQuantity(quantity + 1)}
                     >
-                        <Ionicons name="add" size={24} color="#333" />
+                        <Ionicons name="add" size={24} color={themeColors.text} />
                     </TouchableOpacity>
                 </View>
 
@@ -143,8 +164,8 @@ export default function ProductDetails() {
                 <View style={styles.modalOverlay}>
                     <View style={styles.modalView}>
                         <Ionicons name="checkmark-circle" size={60} color="#4CAF50" style={{ marginBottom: 15 }} />
-                        <Text style={styles.modalTitle}>¡Agregado!</Text>
-                        <Text style={styles.modalMessage}>Agregaste {quantity} {product.name} a tu carrito.</Text>
+                        <Text style={[styles.modalTitle, { color: themeColors.text }]}>¡Agregado!</Text>
+                        <Text style={[styles.modalMessage, { color: themeColors.text, opacity: 0.7 }]}>Agregaste {quantity} {product.name} a tu carrito.</Text>
                         <TouchableOpacity
                             style={styles.modalButton}
                             onPress={handleSuccessClose}
@@ -165,8 +186,8 @@ export default function ProductDetails() {
                 <View style={styles.modalOverlay}>
                     <View style={styles.modalView}>
                         <Ionicons name="close-circle" size={60} color="#F44336" style={{ marginBottom: 15 }} />
-                        <Text style={styles.modalTitle}>Error</Text>
-                        <Text style={styles.modalMessage}>{showErrorModal.message}</Text>
+                        <Text style={[styles.modalTitle, { color: themeColors.text }]}>Error</Text>
+                        <Text style={[styles.modalMessage, { color: themeColors.text, opacity: 0.7 }]}>{showErrorModal.message}</Text>
                         <TouchableOpacity
                             style={styles.modalButton}
                             onPress={() => setShowErrorModal({ visible: false, message: '' })}
@@ -215,7 +236,6 @@ const styles = StyleSheet.create({
     name: {
         fontSize: 26,
         fontWeight: 'bold',
-        color: '#333',
         marginBottom: 5,
         marginTop: 10,
     },
@@ -233,7 +253,6 @@ const styles = StyleSheet.create({
     },
     divider: {
         height: 1,
-        backgroundColor: '#eee',
         marginVertical: 20,
     },
     sectionTitle: {
@@ -248,21 +267,17 @@ const styles = StyleSheet.create({
     },
     noteInput: {
         borderWidth: 1,
-        borderColor: '#ddd',
         borderRadius: 8,
         padding: 15,
         height: 100,
-        backgroundColor: '#f9f9f9',
     },
     footer: {
         position: 'absolute',
         bottom: 0,
         left: 0,
         right: 0,
-        backgroundColor: '#fff',
         padding: 20,
         borderTopWidth: 1,
-        borderTopColor: '#eee',
         flexDirection: 'row',
         alignItems: 'center',
         shadowColor: '#000',
@@ -274,7 +289,6 @@ const styles = StyleSheet.create({
     quantityContainer: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#f0f0f0',
         borderRadius: 25,
         paddingHorizontal: 10,
         paddingVertical: 5,
@@ -301,7 +315,6 @@ const styles = StyleSheet.create({
     modalView: {
         width: '80%',
         maxWidth: 340,
-        backgroundColor: 'white',
         borderRadius: 20,
         padding: 25,
         alignItems: 'center',
@@ -315,12 +328,10 @@ const styles = StyleSheet.create({
         fontSize: 22,
         fontWeight: 'bold',
         marginBottom: 10,
-        color: '#333',
     },
     modalMessage: {
         fontSize: 16,
         textAlign: 'center',
-        color: '#555',
         marginBottom: 20,
     },
     modalButton: {

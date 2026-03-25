@@ -7,13 +7,26 @@ import { MaterialIcons } from '@expo/vector-icons';
 import React, { useState } from 'react';
 import { FlatList, Image, Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useColorScheme } from '@/hooks/use-color-scheme';
 
 export default function CartScreen() {
+    const colorScheme = useColorScheme();
+    const theme = colorScheme ?? 'light';
+    const themeColors = Colors[theme];
+
     const { items, removeItem, updateQuantity, totalAmount, clearCart } = useCart();
     const { orderType, setOrderType } = useOrderType();
 
+    // Derived UI values for the interactive order type selector
+    const getIconColor = (type: 'dine-in' | 'takeout') => {
+        const isActive = orderType === type;
+        if (isActive) return theme === 'dark' ? '#fff' : themeColors.tint;
+        return theme === 'dark' ? '#888' : '#bbb';
+    };
+
     const [isProcessing, setIsProcessing] = useState(false);
     const [showConfirmModal, setShowConfirmModal] = useState(false);
+    const [paymentMethod, setPaymentMethod] = useState<'efectivo' | 'tarjeta'>('efectivo');
     const [statusModal, setStatusModal] = useState<{ visible: boolean; type: 'success' | 'error'; message: string }>({
         visible: false,
         type: 'success',
@@ -32,7 +45,7 @@ export default function CartScreen() {
     const processPayment = async () => {
         setIsProcessing(true);
         try {
-            await createOrder(items, totalAmount, orderType as 'dine-in' | 'takeout');
+            await createOrder(items, totalAmount, orderType as 'dine-in' | 'takeout', paymentMethod);
             clearCart();
             setShowConfirmModal(false);
             setStatusModal({
@@ -55,27 +68,32 @@ export default function CartScreen() {
 
     if (items.length === 0 && !statusModal.visible) {
         return (
-            <View style={styles.emptyContainer}>
-                <IconSymbol name="cart" size={64} color="#ccc" />
-                <Text style={styles.emptyText}>Tu carrito está vacío</Text>
+            <View style={[styles.emptyContainer, { backgroundColor: themeColors.background }]}>
+                <IconSymbol name="cart" size={64} color={themeColors.icon} />
+                <Text style={[styles.emptyText, { color: themeColors.text, opacity: 0.6 }]}>Tu carrito está vacío</Text>
             </View>
         );
     }
 
     return (
-        <SafeAreaView style={styles.container}>
+        <SafeAreaView style={[styles.container, { backgroundColor: themeColors.background }]}>
             <FlatList
                 data={items}
                 keyExtractor={(item) => item.id.toString()}
                 contentContainerStyle={styles.listContent}
                 renderItem={({ item }) => (
-                    <View style={styles.itemContainer}>
+                    <View style={[styles.itemContainer, { backgroundColor: themeColors.card }]}>
                         <Image
                             source={{ uri: item.image_url || 'https://via.placeholder.com/100' }}
                             style={styles.itemImage}
                         />
                         <View style={styles.itemDetails}>
-                            <Text style={styles.itemName}>{item.name}</Text>
+                            <Text style={[styles.itemName, { color: themeColors.text }]}>{item.name}</Text>
+                            {item.note ? (
+                                <Text style={[styles.itemNote, { color: themeColors.text, opacity: 0.6 }]} numberOfLines={1}>
+                                    Nota: {item.note}
+                                </Text>
+                            ) : null}
                             <Text style={styles.itemPrice}>${item.price.toFixed(2)}</Text>
 
                             <View style={styles.quantityContainer}>
@@ -83,14 +101,14 @@ export default function CartScreen() {
                                     onPress={() => updateQuantity(item.id, item.quantity - 1)}
                                     style={styles.quantityButton}
                                 >
-                                    <IconSymbol name="minus.circle.fill" size={24} color={Colors.light.tint} />
+                                    <IconSymbol name="minus.circle.fill" size={24} color={themeColors.tint} />
                                 </TouchableOpacity>
-                                <Text style={styles.quantityText}>{item.quantity}</Text>
+                                <Text style={[styles.quantityText, { color: themeColors.text }]}>{item.quantity}</Text>
                                 <TouchableOpacity
                                     onPress={() => updateQuantity(item.id, item.quantity + 1)}
                                     style={styles.quantityButton}
                                 >
-                                    <IconSymbol name="plus.circle.fill" size={24} color={Colors.light.tint} />
+                                    <IconSymbol name="plus.circle.fill" size={24} color={themeColors.tint} />
                                 </TouchableOpacity>
                             </View>
                         </View>
@@ -100,10 +118,10 @@ export default function CartScreen() {
                     </View>
                 )}
             />
-
-            <View style={styles.footer}>
+            
+            <View style={[styles.footer, { backgroundColor: themeColors.card, borderTopColor: themeColors.border }]}>
                 <View style={styles.totalContainer}>
-                    <Text style={styles.totalLabel}>Total:</Text>
+                    <Text style={[styles.totalLabel, { color: themeColors.text }]}>Total:</Text>
                     <Text style={styles.totalAmount}>${totalAmount.toFixed(2)}</Text>
                 </View>
                 <TouchableOpacity
@@ -125,18 +143,113 @@ export default function CartScreen() {
                 onRequestClose={() => !isProcessing && setShowConfirmModal(false)}
             >
                 <View style={styles.modalOverlay}>
-                    <View style={styles.modalView}>
-                        <Text style={styles.modalTitle}>Confirmar Pago</Text>
-                        <Text style={styles.modalText}>Total a pagar: <Text style={styles.boldText}>${totalAmount.toFixed(2)}</Text></Text>
-                        <Text style={styles.modalText}>Orden: <Text style={styles.boldText}>{orderType === 'dine-in' ? 'Comer aquí' : 'Para llevar'}</Text></Text>
+                    <View style={[styles.modalView, { backgroundColor: themeColors.card }]}>
+                        <Text style={[styles.modalTitle, { color: themeColors.text }]}>Confirmar Pago</Text>
+                        <Text style={[styles.modalText, { color: themeColors.text, opacity: 0.8 }]}>Total a pagar: <Text style={[styles.boldText, { color: themeColors.text }]}>${totalAmount.toFixed(2)}</Text></Text>
+                        
+                        <View style={styles.divider} />
+                        <Text style={[styles.sectionTitle, { color: themeColors.text }]}>¿Cómo deseas tu orden?</Text>
+                        
+                        <View style={styles.optionsContainer}>
+                            <TouchableOpacity
+                                style={[
+                                    styles.optionButton,
+                                    { backgroundColor: theme === 'dark' ? '#333' : '#f5f5f5' },
+                                    orderType === 'dine-in' && styles.optionButtonActive
+                                ]}
+                                onPress={() => setOrderType('dine-in')}
+                            >
+                                <View style={[styles.iconContainer, { backgroundColor: theme === 'dark' ? '#444' : '#fff' }]}>
+                                    <MaterialIcons 
+                                        name="restaurant" 
+                                        size={24} 
+                                        color={getIconColor('dine-in')} 
+                                    />
+                                </View>
+                                <Text style={[
+                                    styles.optionText,
+                                    { color: themeColors.text, opacity: 0.7 },
+                                    orderType === 'dine-in' && styles.optionTextActive
+                                ]}>Comer aquí</Text>
+                            </TouchableOpacity>
+
+                            <TouchableOpacity
+                                style={[
+                                    styles.optionButton,
+                                    { backgroundColor: theme === 'dark' ? '#333' : '#f5f5f5' },
+                                    orderType === 'takeout' && styles.optionButtonActive
+                                ]}
+                                onPress={() => setOrderType('takeout')}
+                            >
+                                <View style={[styles.iconContainer, { backgroundColor: theme === 'dark' ? '#444' : '#fff' }]}>
+                                    <MaterialIcons 
+                                        name="delivery-dining" 
+                                        size={24} 
+                                        color={getIconColor('takeout')} 
+                                    />
+                                </View>
+                                <Text style={[
+                                    styles.optionText,
+                                    { color: themeColors.text, opacity: 0.7 },
+                                    orderType === 'takeout' && styles.optionTextActive
+                                ]}>Para llevar</Text>
+                            </TouchableOpacity>
+                        </View>
+
+                        <Text style={[styles.sectionTitle, { color: themeColors.text, marginTop: 15 }]}>¿Cómo deseas pagar?</Text>
+                        <View style={styles.optionsContainer}>
+                            <TouchableOpacity
+                                style={[
+                                    styles.optionButton,
+                                    { backgroundColor: theme === 'dark' ? '#333' : '#f5f5f5' },
+                                    paymentMethod === 'efectivo' && styles.optionButtonActive
+                                ]}
+                                onPress={() => setPaymentMethod('efectivo')}
+                            >
+                                <View style={[styles.iconContainer, { backgroundColor: theme === 'dark' ? '#444' : '#fff' }]}>
+                                    <MaterialIcons 
+                                        name="payments" 
+                                        size={24} 
+                                        color={paymentMethod === 'efectivo' ? themeColors.tint : '#888'} 
+                                    />
+                                </View>
+                                <Text style={[
+                                    styles.optionText,
+                                    { color: themeColors.text, opacity: 0.7 },
+                                    paymentMethod === 'efectivo' && styles.optionTextActive
+                                ]}>Efectivo</Text>
+                            </TouchableOpacity>
+
+                            <TouchableOpacity
+                                style={[
+                                    styles.optionButton,
+                                    { backgroundColor: theme === 'dark' ? '#333' : '#f5f5f5' },
+                                    paymentMethod === 'tarjeta' && styles.optionButtonActive
+                                ]}
+                                onPress={() => setPaymentMethod('tarjeta')}
+                            >
+                                <View style={[styles.iconContainer, { backgroundColor: theme === 'dark' ? '#444' : '#fff' }]}>
+                                    <MaterialIcons 
+                                        name="credit-card" 
+                                        size={24} 
+                                        color={paymentMethod === 'tarjeta' ? themeColors.tint : '#888'} 
+                                    />
+                                </View>
+                                <Text style={[
+                                    styles.optionText,
+                                    { color: themeColors.text, opacity: 0.7 },
+                                    paymentMethod === 'tarjeta' && styles.optionTextActive
+                                ]}>Tarjeta</Text>
+                            </TouchableOpacity>
+                        </View>
 
                         <View style={styles.modalButtons}>
                             <TouchableOpacity
-                                style={[styles.modalButton, styles.buttonCancel]}
+                                style={[styles.modalButton, styles.buttonCancel, { backgroundColor: theme === 'dark' ? '#333' : '#f5f5f5', borderColor: themeColors.border }]}
                                 onPress={() => setShowConfirmModal(false)}
                                 disabled={isProcessing}
                             >
-                                <Text style={styles.buttonCancelText}>Cancelar</Text>
+                                <Text style={[styles.buttonCancelText, { color: themeColors.text, opacity: 0.7 }]}>Cancelar</Text>
                             </TouchableOpacity>
                             <TouchableOpacity
                                 style={[styles.modalButton, styles.buttonConfirm, isProcessing && styles.checkoutButtonDisabled]}
@@ -158,15 +271,15 @@ export default function CartScreen() {
                 onRequestClose={() => setStatusModal({ ...statusModal, visible: false })}
             >
                 <View style={styles.modalOverlay}>
-                    <View style={styles.modalView}>
+                    <View style={[styles.modalView, { backgroundColor: themeColors.card }]}>
                         <MaterialIcons
                             name={statusModal.type === 'success' ? 'check-circle' : 'error'}
                             size={60}
                             color={statusModal.type === 'success' ? '#4CAF50' : '#F44336'}
                             style={{ marginBottom: 15 }}
                         />
-                        <Text style={styles.modalTitle}>{statusModal.type === 'success' ? 'Éxito' : 'Error'}</Text>
-                        <Text style={styles.modalMessage}>{statusModal.message}</Text>
+                        <Text style={[styles.modalTitle, { color: themeColors.text }]}>{statusModal.type === 'success' ? 'Éxito' : 'Error'}</Text>
+                        <Text style={[styles.modalMessage, { color: themeColors.text, opacity: 0.7 }]}>{statusModal.message}</Text>
                         <TouchableOpacity
                             style={[styles.modalButton, styles.buttonConfirm, { width: '100%', marginTop: 20 }]}
                             onPress={() => setStatusModal({ ...statusModal, visible: false })}
@@ -227,6 +340,11 @@ const styles = StyleSheet.create({
         fontSize: 16,
         fontWeight: '600',
         color: '#333',
+        marginBottom: 2,
+    },
+    itemNote: {
+        fontSize: 12,
+        fontStyle: 'italic',
         marginBottom: 4,
     },
     itemPrice: {
@@ -368,5 +486,52 @@ const styles = StyleSheet.create({
         color: 'white',
         fontWeight: 'bold',
         fontSize: 16,
+    },
+    divider: {
+        width: '100%',
+        height: 1,
+        backgroundColor: '#eee',
+        marginVertical: 15,
+    },
+    sectionTitle: {
+        fontSize: 16,
+        fontWeight: '600',
+        color: '#333',
+        marginBottom: 12,
+        alignSelf: 'flex-start',
+    },
+    optionsContainer: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        width: '100%',
+        gap: 12,
+        marginBottom: 10,
+    },
+    optionButton: {
+        flex: 1,
+        alignItems: 'center',
+        padding: 12,
+        borderRadius: 12,
+        backgroundColor: '#f5f5f5',
+        borderWidth: 2,
+        borderColor: 'transparent',
+    },
+    optionButtonActive: {
+        backgroundColor: '#D92323',
+        borderColor: '#D92323',
+    },
+    iconContainer: {
+        marginBottom: 6,
+        padding: 6,
+        borderRadius: 20,
+    },
+    optionText: {
+        fontSize: 12,
+        fontWeight: '600',
+        color: '#555',
+        textAlign: 'center',
+    },
+    optionTextActive: {
+        color: '#fff',
     },
 });

@@ -1,4 +1,4 @@
-import React, { createContext, ReactNode, useContext, useState } from 'react';
+import React, { createContext, ReactNode, useContext, useState, useMemo } from 'react';
 
 export interface CartItem {
     id: number;
@@ -6,11 +6,12 @@ export interface CartItem {
     price: number;
     image_url: string | null;
     quantity: number;
+    note?: string;
 }
 
 interface CartContextType {
     items: CartItem[];
-    addItem: (product: any, quantity?: number) => void;
+    addItem: (product: any, quantity?: number, note?: string) => void;
     removeItem: (id: number) => void;
     updateQuantity: (id: number, quantity: number) => void;
     clearCart: () => void;
@@ -23,12 +24,13 @@ const CartContext = createContext<CartContextType | undefined>(undefined);
 export const CartProvider = ({ children }: { children: ReactNode }) => {
     const [items, setItems] = useState<CartItem[]>([]);
 
-    const addItem = (product: any, quantity: number = 1) => {
+    const addItem = (product: any, quantity: number = 1, note?: string) => {
         setItems((currentItems) => {
-            const existingItem = currentItems.find((item) => item.id === product.id);
+            // Find item by ID AND note to allow different preferences for the same product
+            const existingItem = currentItems.find((item) => item.id === product.id && item.note === note);
             if (existingItem) {
                 return currentItems.map((item) =>
-                    item.id === product.id
+                    (item.id === product.id && item.note === note)
                         ? { ...item, quantity: item.quantity + quantity }
                         : item
                 );
@@ -38,7 +40,8 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
                 name: product.name,
                 price: product.price,
                 image_url: product.image_url,
-                quantity: quantity
+                quantity: quantity,
+                note: note
             }];
         });
     };
@@ -73,18 +76,18 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         0
     );
 
+    const value = useMemo(() => ({
+        items,
+        addItem,
+        removeItem,
+        updateQuantity,
+        clearCart,
+        totalAmount,
+        totalItems,
+    }), [items]);
+
     return (
-        <CartContext.Provider
-            value={{
-                items,
-                addItem,
-                removeItem,
-                updateQuantity,
-                clearCart,
-                totalAmount,
-                totalItems,
-            }}
-        >
+        <CartContext.Provider value={value}>
             {children}
         </CartContext.Provider>
     );

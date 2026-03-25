@@ -1,5 +1,7 @@
 import { useCart } from '@/context/CartContext';
 import { useRouter } from 'expo-router';
+import { useColorScheme } from '../hooks/use-color-scheme';
+import { Colors } from '../constants/theme';
 import { Alert, Dimensions, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 interface Product {
@@ -17,6 +19,10 @@ interface ProductCardProps {
 const { width } = Dimensions.get('window');
 
 export const ProductCard = ({ product }: ProductCardProps) => {
+    const colorScheme = useColorScheme();
+    const theme = colorScheme ?? 'light';
+    const themeColors = Colors[theme];
+    
     const router = useRouter();
     const { addItem } = useCart();
 
@@ -26,7 +32,7 @@ export const ProductCard = ({ product }: ProductCardProps) => {
     };
 
     return (
-        <View style={styles.cardContainer}>
+        <View style={[styles.cardContainer, { backgroundColor: themeColors.card }]}>
             <TouchableOpacity
                 style={styles.card}
                 onPress={() => router.push(`/product/${product.id}`)}
@@ -38,11 +44,11 @@ export const ProductCard = ({ product }: ProductCardProps) => {
                 />
                 <View style={styles.content}>
                     <View style={styles.header}>
-                        <Text style={styles.name}>{product.name}</Text>
+                        <Text style={[styles.name, { color: themeColors.text }]}>{product.name}</Text>
                         <Text style={styles.price}>${product.price.toFixed(2)}</Text>
                     </View>
                     {product.description && (
-                        <Text style={styles.description} numberOfLines={2}>
+                        <Text style={[styles.description, { color: themeColors.text, opacity: 0.6 }]} numberOfLines={2}>
                             {product.description}
                         </Text>
                     )}

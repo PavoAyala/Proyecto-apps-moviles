@@ -3,8 +3,13 @@ import React from 'react';
 import { Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Colors } from '../constants/theme';
 import { useOrderType } from '../context/OrderTypeContext';
+import { useColorScheme } from '../hooks/use-color-scheme';
 
 export function OrderTypeModal() {
+    const colorScheme = useColorScheme();
+    const theme = colorScheme ?? 'light';
+    const themeColors = Colors[theme];
+    
     const { orderType, setOrderType } = useOrderType();
 
     // If an order type is already selected, don't show the modal
@@ -21,28 +26,28 @@ export function OrderTypeModal() {
             }}
         >
             <View style={styles.centeredView}>
-                <View style={styles.modalView}>
-                    <Text style={styles.title}>¿Cómo deseas tu orden?</Text>
+                <View style={[styles.modalView, { backgroundColor: themeColors.card }]}>
+                    <Text style={[styles.title, { color: themeColors.text }]}>¿Cómo deseas tu orden?</Text>
 
                     <View style={styles.optionsContainer}>
                         <TouchableOpacity
-                            style={styles.optionButton}
+                            style={[styles.optionButton, { backgroundColor: theme === 'dark' ? '#333' : '#f5f5f5' }]}
                             onPress={() => setOrderType('dine-in')}
                         >
-                            <View style={styles.iconContainer}>
-                                <MaterialIcons name="restaurant" size={48} color={Colors.light.tint} />
+                            <View style={[styles.iconContainer, { backgroundColor: theme === 'dark' ? '#444' : '#fff' }]}>
+                                <MaterialIcons name="restaurant" size={48} color={themeColors.tint} />
                             </View>
-                            <Text style={styles.optionText}>Para comer aquí</Text>
+                            <Text style={[styles.optionText, { color: themeColors.text }]}>Para comer aquí</Text>
                         </TouchableOpacity>
 
                         <TouchableOpacity
-                            style={styles.optionButton}
+                            style={[styles.optionButton, { backgroundColor: theme === 'dark' ? '#333' : '#f5f5f5' }]}
                             onPress={() => setOrderType('takeout')}
                         >
-                            <View style={styles.iconContainer}>
-                                <MaterialIcons name="delivery-dining" size={48} color={Colors.light.tint} />
+                            <View style={[styles.iconContainer, { backgroundColor: theme === 'dark' ? '#444' : '#fff' }]}>
+                                <MaterialIcons name="delivery-dining" size={48} color={themeColors.tint} />
                             </View>
-                            <Text style={styles.optionText}>Para llevar</Text>
+                            <Text style={[styles.optionText, { color: themeColors.text }]}>Para llevar</Text>
                         </TouchableOpacity>
                     </View>
                 </View>

@@ -1,9 +1,13 @@
-
 import { StatusBar } from 'expo-status-bar';
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, FlatList, SafeAreaView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, FlatList, StyleSheet, Text, View, TouchableOpacity } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { ProductCard } from '../../components/ProductCard';
 import { supabase } from '../../lib/supabase';
+import { MaterialIcons } from '@expo/vector-icons';
+import { ProfileModal } from '../../components/ProfileModal';
+import { useColorScheme } from '../../hooks/use-color-scheme';
+import { Colors } from '../../constants/theme';
 
 interface Product {
   id: number;
@@ -14,8 +18,13 @@ interface Product {
 }
 
 export default function MenuScreen() {
+  const colorScheme = useColorScheme();
+  const theme = colorScheme ?? 'light';
+  const themeColors = Colors[theme];
+
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const [profileVisible, setProfileVisible] = useState(false);
 
   useEffect(() => {
     fetchProducts();
@@ -48,22 +57,31 @@ export default function MenuScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar style="dark" />
-      <View style={styles.header}>
-        <Text style={styles.title}>Menú</Text>
-        <Text style={styles.subtitle}>Tacos El Güero</Text>
+    <SafeAreaView style={[styles.container, { backgroundColor: themeColors.background }]}>
+      <StatusBar style={theme === 'dark' ? 'light' : 'dark'} />
+      <View style={[styles.header, { backgroundColor: themeColors.card, borderBottomColor: themeColors.border }]}>
+        <View>
+          <Text style={styles.title}>Menú</Text>
+          <Text style={[styles.subtitle, { color: themeColors.text, opacity: 0.6 }]}>Tacos El Güero</Text>
+        </View>
+        <TouchableOpacity style={styles.profileButton} onPress={() => setProfileVisible(true)}>
+          <MaterialIcons name="account-circle" size={36} color="#D92323" />
+        </TouchableOpacity>
       </View>
 
-      {loading ? (
+      {loading && (
         <View style={styles.center}>
           <ActivityIndicator size="large" color="#D92323" />
         </View>
-      ) : products.length === 0 ? (
+      )}
+
+      {!loading && products.length === 0 && (
         <View style={styles.center}>
-          <Text>No hay productos disponibles.</Text>
+          <Text style={{ color: themeColors.text }}>No hay productos disponibles.</Text>
         </View>
-      ) : (
+      )}
+
+      {!loading && products.length > 0 && (
         <FlatList
           data={products}
           keyExtractor={(item) => item.id.toString()}
@@ -73,6 +91,8 @@ export default function MenuScreen() {
           onRefresh={fetchProducts}
         />
       )}
+
+      <ProfileModal visible={profileVisible} onClose={() => setProfileVisible(false)} />
     </SafeAreaView>
   );
 }
@@ -87,6 +107,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderBottomWidth: 1,
     borderBottomColor: '#eee',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
   title: {
     fontSize: 28,
@@ -96,6 +119,9 @@ const styles = StyleSheet.create({
   subtitle: {
     fontSize: 16,
     color: '#666',
+  },
+  profileButton: {
+    padding: 4,
   },
   list: {
     padding: 20,

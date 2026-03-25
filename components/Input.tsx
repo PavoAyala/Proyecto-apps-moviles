@@ -1,19 +1,34 @@
 
 import React from 'react';
 import { StyleSheet, Text, TextInput, TextInputProps, View } from 'react-native';
+import { useColorScheme } from '../hooks/use-color-scheme';
+import { Colors } from '../constants/theme';
 
 interface InputProps extends TextInputProps {
     label: string;
     error?: string;
 }
 
-export const Input = ({ label, error, ...props }: InputProps) => {
+export const Input = ({ label, error, style, ...props }: InputProps) => {
+    const colorScheme = useColorScheme();
+    const theme = colorScheme ?? 'light';
+    const themeColors = Colors[theme];
+
     return (
         <View style={styles.container}>
-            <Text style={styles.label}>{label}</Text>
+            <Text style={[styles.label, { color: themeColors.text }]}>{label}</Text>
             <TextInput
-                style={[styles.input, error ? styles.inputError : null]}
-                placeholderTextColor="#999"
+                style={[
+                    styles.input, 
+                    { 
+                        backgroundColor: theme === 'dark' ? 'rgba(255,255,255,0.05)' : '#fff',
+                        borderColor: theme === 'dark' ? 'rgba(255,255,255,0.1)' : '#ddd',
+                        color: themeColors.text
+                    },
+                    error ? styles.inputError : null,
+                    style
+                ]}
+                placeholderTextColor={theme === 'dark' ? '#666' : '#999'}
                 autoCapitalize="none"
                 {...props}
             />
