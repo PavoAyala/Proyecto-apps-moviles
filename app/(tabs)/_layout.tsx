@@ -1,0 +1,53 @@
+import { Tabs } from 'expo-router';
+import React from 'react';
+
+import { HapticTab } from '@/components/haptic-tab';
+import { OrderTypeModal } from '@/components/OrderTypeModal';
+import { IconSymbol } from '@/components/ui/icon-symbol';
+import { Colors } from '@/constants/theme';
+import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useCart } from '@/context/CartContext';
+
+export default function TabLayout() {
+  const colorScheme = useColorScheme();
+  const { totalItems } = useCart();
+
+  return (
+    <>
+      <Tabs
+        screenOptions={{
+          tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
+          headerShown: false,
+          tabBarButton: HapticTab,
+        }}>
+        <Tabs.Screen
+          name="index"
+          options={{
+            title: 'Menú',
+            tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={color} />,
+          }}
+        />
+        <Tabs.Screen
+          name="pedidos"
+          options={{
+            title: 'Pedidos',
+            tabBarIcon: ({ color }) => <IconSymbol size={28} name="list.bullet" color={color} />,
+          }}
+        />
+        <Tabs.Screen
+          name="cart"
+          options={{
+            title: 'Carrito',
+            tabBarIcon: ({ color }) => <IconSymbol size={28} name="cart.fill" color={color} />,
+            tabBarBadge: totalItems > 0 ? totalItems : undefined,
+            tabBarBadgeStyle: {
+              backgroundColor: '#D92323',
+              color: 'white',
+            },
+          }}
+        />
+      </Tabs>
+      <OrderTypeModal />
+    </>
+  );
+}
