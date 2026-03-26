@@ -16,6 +16,7 @@ export default function Register() {
     const themeColors = Colors[theme];
     const router = useRouter();
 
+    const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
@@ -40,7 +41,7 @@ export default function Register() {
     }, []);
 
     async function signUpWithEmail() {
-        if (!email || !password) {
+        if (!name || !email || !password) {
             Alert.alert('Error', 'Por favor llena todos los campos');
             return;
         }
@@ -53,8 +54,12 @@ export default function Register() {
         const { error } = await supabase.auth.signUp({
             email,
             password,
+            options: {
+                data: {
+                    full_name: name,
+                }
+            }
         });
-
         if (error) {
             Alert.alert('Error', error.message);
         } else {
@@ -103,6 +108,13 @@ export default function Register() {
                                 </View>
 
                                 <View style={[styles.card, { backgroundColor: theme === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.95)' }]}>
+                                    <Input
+                                        label="Nombre Completo"
+                                        placeholder="Tu Nombre"
+                                        value={name}
+                                        onChangeText={setName}
+                                        autoCapitalize="words"
+                                    />
                                     <Input
                                         label="Correo Electrónico"
                                         placeholder="ejemplo@correo.com"
